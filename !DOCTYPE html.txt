@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ым ишара сөздігі</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Cera Round Pro Black KZ шрифтін қосу */
+        @font-face {
+            font-family: 'CeraRoundPro';
+            src: url('CeraRoundPro-Black_kz.otf') format('opentype');
+            font-weight: 900;
+            font-style: normal;
+        }
+
+        /* Барлық мәтіндерге қаріпті күштеп тағайындау */
+        * {
+            font-family: 'CeraRoundPro', sans-serif !important;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body { background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        
+        /* Смартфон рамкасының стилі */
+        .phone-frame {
+            max-width: 390px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 0 0 8px #1f2937, 0 20px 50px rgba(0,0,0,0.3);
+            height: 800px;
+            position: relative;
+        }
+
+        .page { display: none; height: 100%; overflow-y: auto; padding-bottom: 100px; }
+        .page.active { display: block; }
+        
+        .grid-card { height: 130px; }
+        
+        .alphabet-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .letter-box { 
+            aspect-ratio: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: #f3f4f6; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            font-size: 1.25rem;
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .letter-box:active {
+            transform: scale(0.9);
+            background-color: #e2e8f0;
+        }
+        .letter-box.selected {
+            background-color: #10b981;
+            color: white;
+        }
+
+        /* Ым-ишара анимациялары мен қол қимылы стилі */
+        @keyframes signGesture {
+            0% { transform: scale(1) rotate(0deg) translateY(0); }
+            25% { transform: scale(1.1) rotate(-5deg) translateY(-5px); }
+            50% { transform: scale(1.05) rotate(5deg) translateY(2px); }
+            75% { transform: scale(1.1) rotate(-3deg) translateY(-2px); }
+            100% { transform: scale(1) rotate(0deg) translateY(0); }
+        }
+        .gesture-active {
+            animation: signGesture 1.5s ease-in-out infinite;
+        }
+
+        /* Сөздер тізімі батырмасы */
+        .word-item {
+            transition: all 0.2s;
+        }
+        .word-item:active {
+            transform: scale(0.97);
+        }
+        .word-item.selected {
+            background-color: #10b981;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <!-- Жоғарғы статус жолағы (телефон симуляциясы) -->
+        <div class="h-10 bg-white flex justify-between items-center px-8 text-xs font-bold pt-2 z-30 relative">
+            <span>19:29</span>
+            <div class="flex gap-2"><span>📶</span> <span>🔋</span></div>
+        </div>
+
+        <!-- БАСТЫ БЕТ (Сөздік және барлық бөлімдер) -->
+        <div id="homePage" class="page active">
+            <header class="pt-6 pb-4 px-6 border-b border-gray-100 bg-white sticky top-0 z-10">
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-2xl font-bold text-gray-800" data-i18n="title">Сөздік</h1>
+                    <select id="langSelect" onchange="updateLanguageAndContent()" class="bg-gray-100 rounded-lg p-1.5 text-xs border-none outline-none font-bold">
+                        <option value="kk">KZ</option>
+                        <option value="ru">RU</option>
+                    </select>
+                </div>
+                <div class="relative">
+                    <input type="text" id="searchInput" oninput="handleSearch()" data-i18n-placeholder="search" 
+                           class="w-full py-3 px-5 rounded-2xl bg-gray-100 outline-none border-none focus:ring-2 focus:ring-emerald-500">
+                    <span class="absolute right-4 top-3 text-gray-400">🔍</span>
+                </div>
+                <div class="flex gap-6 mt-4 text-sm font-semibold text-gray-500">
+                    <span class="text-emerald-600 border-b-2 border-emerald-600 pb-1" data-i18n="tab1">Барлық ишаралар</span>
+                    <span class="text-gray-400" data-i18n="tab2">Таңдаулы</span>
+                </div>
+            </header>
+
+            <main id="categoriesSection" class="p-6 grid grid-cols-2 gap-4">
+                <!-- 1. Алфавит -->
+                <button onclick="openCategory('cat1')" class="grid-card p-4 rounded-3xl bg-blue-50 flex flex-col justify-center items-center shadow-sm hover:scale-105 transition-transform active:scale-95">
+                    <div class="text-3xl mb-1">Aa</div>
+                    <span class="font-bold text-gray-700 text-sm" data-i18n="cat1">Алфавит</span>
+                </button>
+                <!-- 2. Сұрақтар -->
+                <button onclick="openCategory('cat2')" class="grid-card p-4 rounded-3xl bg-green-50 flex flex-col justify-center items-center shadow-sm hover:scale-105 transition-transform active:scale-95">
+                    <div class="text-3xl mb-1">?</div>
+                    <span class="font-bold text-gray-700 text-sm" data-i18n="cat2">Сұрақтар</span>
+                </button>
+                <!-- 3. Диалог -->
+                <button onclick="openCategory('cat3')" class="grid-card p-4 rounded-3xl bg-green-50 flex flex-col justify-center items-center shadow-sm hover:scale-105 transition-transform active:scale-95">
+                    <div class="text-3xl mb-1">💬</div>
+                    <span class="font-bold text-gray-700 text-sm" data-i18n="cat3">Диалог</span>
+                </button>
+                <!-- 4. Әрекеттер -->
+                <button onclick="openCategory('cat4')" class="grid-card p-4 rounded-3xl bg-blue-50 flex flex-col justify-center items-center shadow-sm hover:scale-105 transition-transform active:scale-95">
+                    <div class="text-3xl mb-1">👣</div>
+                    <span class="font-bold text-gray-700 text-sm" data-i18n="cat4">Әрекеттер</span>
+                </button>
+                <!-- 5. Отбасы -->
+                <button onclick="openCategory('cat5')" class="grid-card p-4 rounded-3xl bg-green-50 flex flex-col justify-center items-center shadow-sm hover:scale-105 transition-transform active:scale-95">
+                    <div class="text-3xl mb-1">👨‍👩‍👧‍👦</div>
+                    <span class="font-bold text-gray-700 text-sm" data-i18n="cat5">Отбасы</span>
+                </button>
+                <!-- 6. Глухой -->
+                <button onclick="openCategory('cat6')" class="grid-card p-4 rounded-3xl bg-blue-50 flex flex-col justify-center items-center shadow-sm hover:scale-105 transition-transform active:scale-95">
+                    <div class="text-3xl mb-1">👂</div>
+                    <span class="font-bold text-gray-700 text-sm" data-i18n="cat6">Глухой</span>
+                </button>
+            </main>
+        </div>
+
+        <!-- АЛФАВИТ БӨЛІМІНІҢ БЕТІ -->
+        <div id="alphabetPage" class="page p-6">
+            <button onclick="showHome()" class="mb-4 text-sm font-bold text-emerald-600 flex items-center gap-1">
+                <span>←</span> <span data-i18n="back">Артқа</span>
+            </button>
+            
+            <h2 id="categoryTitle" class="text-2xl font-bold mb-4 text-gray-800"></h2>
+
+            <!-- Әр әріпке арналған видео плеер мен сурет контейнері -->
+            <div id="videoContainer" class="mb-6 bg-gray-50 p-4 rounded-3xl border border-gray-100 shadow-inner">
+                <div class="relative rounded-2xl overflow-hidden bg-emerald-900 h-48 flex items-center justify-center">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-white bg-emerald-950/90 p-4 text-center">
+                        <span class="text-6xl font-extrabold mb-1" id="currentLetterDisplay">А</span>
+                        <p class="text-xs text-emerald-300 font-semibold" data-i18n="videoPlaying">Ишара қимылы көрсетілуде...</p>
+                        <!-- Имитациялық видео қимыл белгішесі -->
+                        <div class="mt-4 gesture-active text-4xl">👋</div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <span class="text-xs font-bold text-gray-500" data-i18n="letterDesc">Таңдалған әріптің ым-ишара нұсқасы</span>
+                </div>
+            </div>
+
+            <!-- Әріптер кестесі -->
+            <div id="alphabetGrid" class="alphabet-grid"></div>
+        </div>
+
+        <!-- ЖАЛПЫ БӨЛІМДЕР БЕТІ (Сұрақтар, Диалог, Әрекеттер, Отбасы, Глухой) -->
+        <div id="generalCategoryPage" class="page p-6">
+            <button onclick="showHome()" class="mb-4 text-sm font-bold text-emerald-600 flex items-center gap-1">
+                <span>←</span> <span data-i18n="back">Артқа</span>
+            </button>
+            
+            <h2 id="generalTitle" class="text-2xl font-bold mb-4 text-gray-800"></h2>
+
+            <!-- Бейнеплеер Симуляторы -->
+            <div class="mb-6 bg-emerald-50/50 p-4 rounded-3xl border border-emerald-100 shadow-sm">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 h-48 flex items-center justify-center">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-white p-4 text-center bg-gradient-to-b from-slate-900 via-emerald-950 to-slate-900">
+                        <span class="text-lg font-bold text-emerald-300" id="currentWordCategory">Диалог</span>
+                        <span class="text-3xl font-extrabold my-2 text-white" id="currentWordDisplay">Сәлем</span>
+                        
+                        <!-- Ым-ишара қимылының сипаттамасы -->
+                        <p class="text-xs text-slate-300 max-w-xs mt-1 bg-black/40 px-3 py-1.5 rounded-xl border border-white/10" id="currentWordDesc">Қолды маңдайға апарып, сәлемдесу</p>
+                        
+                        <div class="mt-3 gesture-active text-4xl">🖐️</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Сөздер тізімі -->
+            <div class="space-y-2.5 overflow-y-auto max-h-[300px] pr-1" id="wordsListContainer">
+                <!-- Сөздер батырмалары JS арқылы динамикалық түрде осы жерге қосылады -->
+            </div>
+        </div>
+
+        <!-- ПРОФИЛЬ (ЖЕКЕ КАБИНЕТ) БЕТІ -->
+        <div id="profilePage" class="page p-6 bg-gray-50">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center" data-i18n="profileTitle">Жеке кабинет</h2>
+            
+            <!-- Профиль картасы -->
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center mb-6">
+                <div class="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border-4 border-emerald-50">
+                    👤
+                </div>
+                <!-- Аты-жөні -->
+                <h3 class="text-xl font-bold text-gray-800 mb-1" id="profileName">Абылай Хан</h3>
+                <p class="text-sm text-gray-500" data-i18n="userRole">Пайдаланушы / Пользователь</p>
+            </div>
+
+            <!-- Қосымша мәліметтер -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4 mb-6 text-left">
+                <div>
+                    <span class="text-xs text-gray-400 block" data-i18n="profileEmail">Электронды пошта</span>
+                    <span class="text-base font-bold text-gray-700">user@signlanguage.kz</span>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <span class="text-xs text-gray-400 block" data-i18n="profilePhone">Телефон нөмірі</span>
+                    <span class="text-base font-bold text-gray-700">+7 (707) 123-45-67</span>
+                </div>
+            </div>
+
+            <!-- Қосымша туралы -->
+            <div class="bg-emerald-50 rounded-3xl p-5 border border-emerald-100 text-left">
+                <h4 class="text-sm font-bold text-emerald-800 mb-2" data-i18n="aboutTitle">Қосымша туралы</h4>
+                <p class="text-xs text-emerald-700 leading-relaxed" data-i18n="aboutDesc">
+                    Есту және сөйлеу қабілеті зақымдалған жандарға арналған қос тілді (қазақша/орысша) интерактивті ым-ишара тілінің сөздік қосымшасы.
+                </p>
+            </div>
+        </div>
+
+        <!-- ТӨМЕНГІ НАВИГАЦИЯЛЫҚ МӘЗІР (Ұялы телефондағыдай тұрақты) -->
+        <nav class="absolute bottom-0 w-full bg-white border-t border-gray-100 px-8 py-5 flex justify-between items-center z-20">
+            <!-- 🏠 Үй белгішесі (Басты бетті ашады) -->
+            <button onclick="showHome()" class="text-2xl hover:scale-110 transition-transform active:scale-95">🏠</button>
+            <!-- 📖 Кітап белгішесі (Басты бетке өтіп, бөлімдерге фокус жасайды) -->
+            <button onclick="goToCategories()" class="text-2xl hover:scale-110 transition-transform active:scale-95">📖</button>
+            <button class="text-2xl hover:scale-110 transition-transform active:scale-95">🔄</button>
+            <!-- 👤 Адам белгішесі (Профильді ашады) -->
+            <button onclick="openProfile()" class="text-2xl hover:scale-110 transition-transform active:scale-95">👤</button>
+        </nav>
+    </div>
+
+    <script>
+        // Екі тілдегі алфавиттер тізімі
+        const alphabets = {
+            kk: "АӘБВГҒДЕЁЖЗИЙКҚЛМНҢОӨПРСТУҰҮФХҺЦЧШЩЪЫІЬЭЮЯ".split(""),
+            ru: "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".split("")
+        };
+
+        // Тілдік аудармалар мен категориялық сөздер жинағы
+        const categoryData = {
+            cat2: { // Сұрақтар / Вопросы
+                kk: [
+                    { word: "Қалайсыз?", desc: "Қолды кеудеге қойып, сәл алға созу қимылы" },
+                    { word: "Атыңыз кім?", desc: "Сұқ саусақпен көрсетіп, иықты көтеру қимылы" },
+                    { word: "Қайда?", desc: "Екі алақанды ашып, иық тұсында жан-жаққа қарау" },
+                    { word: "Неше?", desc: "Саусақтарды кезекпен жеңіл бүгіп көрсету" },
+                    { word: "Көмек керек пе?", desc: "Оң қолмен сол қолдың алақанын сипау арқылы көмек сұрау" }
+                ],
+                ru: [
+                    { word: "Как дела?", desc: "Приложить правую руку к груди и плавно направить вперед" },
+                    { word: "Как вас зовут?", desc: "Указать указательным пальцем вперед и пожать плечами" },
+                    { word: "Где?", desc: "Развести обе ладони в стороны с вопросительным взглядом" },
+                    { word: "Сколько?", desc: "Поочередно разжимать пальцы из кулака" },
+                    { word: "Нужна помощь?", desc: "Провести правой ладонью по левой ладони" }
+                ]
+            },
+            cat3: { // ... Диалог
+                kk: [
+                    { word: "Сәлем", desc: "Оң қолды маңдайға жақындатып, сәлемдесу ишарасы" },
+                    { word: "Рақмет", desc: "Оң қолды иек астынан алға бағыттап, жеңіл иілу" },
+                    { word: "Сау бол", desc: "Қолды жоғары көтеріп, оңға-солға бұлғау" },
+                    { word: "Иә", desc: "Басты жоғары-төмен екі рет сенімді изеу" },
+                    { word: "Жоқ", desc: "Басты оңға және солға кезекпен шайқау" },
+                    { word: "Кешіріңіз", desc: "Екі қолды кеудеде біріктіріп, басты төмен иіп көрсету" }
+                ],
+                ru: [
+                    { word: "Привет", desc: "Поднять руку на уровне виска приветственным жестом" },
+                    { word: "Спасибо", desc: "Поднести правую руку к подбородку и сделать легкий поклон" },
+                    { word: "Пока", desc: "Помахать открытой ладонью из стороны в сторону" },
+                    { word: "Да", desc: "Дважды плавно утвердительно кивнуть головой" },
+                    { word: "Нет", desc: "Покачать головой из стороны в сторону в знак отрицания" },
+                    { word: "Извините", desc: "Приложить руку к сердцу и сделать легкий наклон головы" }
+                ]
+            },
+            cat4: { // ... Әрекеттер
+                kk: [
+                    { word: "Жүру", desc: "Ортан қол мен сұқ саусақты аяқ сияқты қадамдатып қозғалту" },
+                    { word: "Көру", desc: "Екі саусақты көз тұсынан алға қарай бағыттау" },
+                    { word: "Отыру", desc: "Алақанды төмен қарай бағыттап, төмен түсіру" },
+                    { word: "Түсіну", desc: "Сұқ саусақты маңдай тұсына апарып, басты изеу" },
+                    { word: "Оқу", desc: "Қос алақанды кітап сияқты ашып, көзбен қарау қимылы" }
+                ],
+                ru: [
+                    { word: "Идти", desc: "Шагать средним и указательным пальцами по ладони" },
+                    { word: "Видеть", desc: "Показать двумя пальцами от глаз в направлении объекта" },
+                    { word: "Сидеть", desc: "Опустить ладонь сверху вниз параллельно полу" },
+                    { word: "Понимать", desc: "Коснуться указательным пальцем лба и кивнуть" },
+                    { word: "Читать", desc: "Сложить ладони раскрытой книгой перед лицом" }
+                ]
+            },
+            cat5: { // ... Отбасы
+                kk: [
+                    { word: "Әке", desc: "Оң қолды жұдырықтап, иек тұсына екі рет тигізу" },
+                    { word: "Ана", desc: "Оң қолдың алақанымен бетті ақырын сипап өту" },
+                    { word: "Аға", desc: "Оң қолмен сол жақ иықты жеңіл қағып қою" },
+                    { word: "Әпке", desc: "Шашты оң қолмен артқа қарай сипау қимылымен бейнелеу" },
+                    { word: "Бала", desc: "Қолды төменнен жоғары қарай көтеріп, бала бойын көрсету" }
+                ],
+                ru: [
+                    { word: "Отец", desc: "Сжать руку в кулак и дважды мягко коснуться подбородка" },
+                    { word: "Мать", desc: "Мягко провести тыльной стороной ладони по щеке" },
+                    { word: "Брат", desc: "Приложить правую ладонь к левому плечу" },
+                    { word: "Сестра", desc: "Жест поправления воображаемых длинных волос у виска" },
+                    { word: "Ребенок", desc: "Опустить ладонь горизонтально, показывая рост ребенка" }
+                ]
+            },
+            cat6: { // ... Глухой
+                kk: [
+                    { word: "Естімейтін адам", desc: "Сұқ саусақты құлаққа, сосын ауыз тұсына апарып көрсету" },
+                    { word: "Ым-ишара тілі", desc: "Қос қолдың саусақтарын айналдыра белсенді қозғалту" },
+                    { word: "Аудармашы", desc: "Қос қолдың саусақтарын айқастырып, жылдам қозғалту" },
+                    { word: "Дос", desc: "Қол алысып, сосын қос қолды айқастыра құшақтасу белгісі" }
+                ],
+                ru: [
+                    { word: "Глухой", desc: "Коснуться указательным пальцем уха, затем губ" },
+                    { word: "Жестовый язык", desc: "Вращать кистями рук друг перед другом по кругу" },
+                    { word: "Переводчик", desc: "Быстро скрещивать пальцы обеих рук перед грудью" },
+                    { word: "Друг", desc: "Крепко пожать руки и обнять себя за плечи" }
+                ]
+            }
+        };
+
+        const i18n = {
+            kk: { 
+                title: "Сөздік", 
+                search: "Іздеу..", 
+                tab1: "Барлық ишаралар", 
+                tab2: "Таңдаулы", 
+                cat1: "Алфавит", 
+                cat2: "Сұрақтар", 
+                cat3: "Диалог", 
+                cat4: "Әрекеттер", 
+                cat5: "Отбасы", 
+                cat6: "Глухой", 
+                back: "Артқа",
+                videoPlaying: "Ишара қимылы көрсетілуде...",
+                letterDesc: "Таңдалған әріптің ым-ишара нұсқасы",
+                videoTranslation: "Бұл бөлімде тақырыптық видео жинақтары көрсетіледі",
+                loadingDesc: "Видео файлдар жүктелуде...",
+                profileTitle: "Жеке кабинет",
+                userRole: "Пайдаланушы",
+                profileEmail: "Электронды пошта",
+                profilePhone: "Телефон нөмірі",
+                aboutTitle: "Қосымша туралы",
+                aboutDesc: "Есту және сөйлеу қабілеті зақымдалған жандарға арналған қос тілді (қазақша/орысша) интерактивті ым-ишара тілінің сөздік қосымшасы."
+            },
+            ru: { 
+                title: "Словарь", 
+                search: "Поиск..", 
+                tab1: "Все жесты", 
+                tab2: "Избранное", 
+                cat1: "Алфавит", 
+                cat2: "Вопросы", 
+                cat3: "Диалог", 
+                cat4: "Действия", 
+                cat5: "Семья", 
+                cat6: "Глухой", 
+                back: "Назад",
+                videoPlaying: "Демонстрация жеста...",
+                letterDesc: "Жестовый вариант выбранной буквы",
+                videoTranslation: "В этом разделе будут показаны тематические видео",
+                loadingDesc: "Загрузка видео файлов...",
+                profileTitle: "Мой профиль",
+                userRole: "Пользователь",
+                profileEmail: "Электронная почта",
+                profilePhone: "Номер телефона",
+                aboutTitle: "О приложении",
+                aboutDesc: "Двуязычный (казахский/русский) интерактивный словарь-помощник жестового языка для людей с нарушениями слуха и речи."
+            }
+        };
+
+        let currentActiveCategoryKey = "";
+
+        // Тіл ауысқанда немесе парақша жүктелгенде интерфейсті жаңарту
+        function updateLanguageAndContent() {
+            const lang = document.getElementById('langSelect').value;
+            
+            // Көптілді мәтіндерді жаңарту
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.dataset.i18n;
+                if (i18n[lang][key]) el.innerText = i18n[lang][key];
+            });
+
+            // Іздеу жолағының мәтінін жаңарту
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.placeholder = i18n[lang].search;
+            }
+
+            // Егер қазір бір белсенді бөлім ашық болса, оның ішін жаңарту
+            if (currentActiveCategoryKey) {
+                openCategory(currentActiveCategoryKey, true);
+            }
+        }
+
+        // Алфавит әріптерін экранға шығару
+        function renderAlphabet(lang) {
+            const grid = document.getElementById('alphabetGrid');
+            grid.innerHTML = '';
+            
+            alphabets[lang].forEach(letter => {
+                const div = document.createElement('div');
+                div.className = 'letter-box';
+                div.innerText = letter;
+                div.id = `letter-${letter}`;
+                div.onclick = () => selectLetter(letter);
+                grid.appendChild(div);
+            });
+        }
+
+        // Әріпті таңдаған кезде оған қатысты видео аймағын ашу
+        function selectLetter(letter) {
+            document.querySelectorAll('.letter-box').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            const selectedBox = document.getElementById(`letter-${letter}`);
+            if (selectedBox) {
+                selectedBox.classList.add('selected');
+            }
+
+            const videoContainer = document.getElementById('videoContainer');
+            videoContainer.classList.remove('hidden');
+            
+            const currentLetterDisplay = document.getElementById('currentLetterDisplay');
+            currentLetterDisplay.innerText = letter;
+
+            document.getElementById('alphabetPage').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Кез келген сөзді таңдағанда оның сипаттамасы мен қимылын плеерде көрсету
+        function selectWord(wordObj, elementId) {
+            document.querySelectorAll('.word-item').forEach(el => {
+                el.classList.remove('selected', 'bg-emerald-600', 'text-white');
+                el.classList.add('bg-slate-50', 'text-slate-800');
+            });
+
+            const selectedBtn = document.getElementById(elementId);
+            if (selectedBtn) {
+                selectedBtn.classList.remove('bg-slate-50', 'text-slate-800');
+                selectedBtn.classList.add('selected', 'bg-emerald-600', 'text-white');
+            }
+
+            // Плеер мазмұнын жаңарту
+            document.getElementById('currentWordDisplay').innerText = wordObj.word;
+            document.getElementById('currentWordDesc').innerText = wordObj.desc;
+
+            // Фокусты жоғары жылжыту
+            document.getElementById('generalCategoryPage').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Кез келген бөлімді ашқан кездегі бағыттау функциясы
+        function openCategory(key, isLanguageRefresh = false) {
+            currentActiveCategoryKey = key;
+            const lang = document.getElementById('langSelect').value;
+
+            // Барлық беттерді жабу
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+
+            if (key === 'cat1') {
+                // Алфавит бетін ашу
+                document.getElementById('alphabetPage').classList.add('active');
+                document.getElementById('categoryTitle').innerText = i18n[lang][key];
+                renderAlphabet(lang);
+                // Әдепкі бойынша бірінші әріпті таңдау
+                selectLetter(alphabets[lang][0]);
+            } else {
+                // Қалған 5 негізгі бөлімдерді (Сұрақтар, Диалог, Әрекеттер, Отбасы, Глухой) ашу
+                document.getElementById('generalCategoryPage').classList.add('active');
+                document.getElementById('generalTitle').innerText = i18n[lang][key];
+                document.getElementById('currentWordCategory').innerText = i18n[lang][key];
+
+                // Осы категорияның сөздерін тізімге қосу
+                const listContainer = document.getElementById('wordsListContainer');
+                listContainer.innerHTML = '';
+
+                const words = categoryData[key][lang];
+                words.forEach((item, index) => {
+                    const btnId = `word-item-${index}`;
+                    const btn = document.createElement('button');
+                    btn.id = btnId;
+                    btn.className = 'word-item w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 flex justify-between items-center text-left font-bold text-slate-800 shadow-sm';
+                    btn.innerHTML = `
+                        <span>${item.word}</span>
+                        <span class="text-emerald-500 text-sm">▶</span>
+                    `;
+                    btn.onclick = () => selectWord(item, btnId);
+                    listContainer.appendChild(btn);
+                });
+
+                // Әдепкі бойынша бірінші сөзді таңдап көрсету
+                if (words.length > 0) {
+                    selectWord(words[0], `word-item-0`);
+                }
+            }
+        }
+
+        // Басты бетке қайта оралу
+        function showHome() {
+            currentActiveCategoryKey = "";
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById('homePage').classList.add('active');
+            
+            // Іздеу жолағын тазалау
+            document.getElementById('searchInput').value = '';
+        }
+
+        // Бөлімдерді ашу (Басты бетке өтіп, категориялар секциясына бағыттайды)
+        function goToCategories() {
+            showHome();
+            const categoriesSec = document.getElementById('categoriesSection');
+            if (categoriesSec) {
+                categoriesSec.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Профиль (Жеке кабинет) бетін ашу
+        function openProfile() {
+            currentActiveCategoryKey = "";
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById('profilePage').classList.add('active');
+        }
+
+        // Іздеу функциясы
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const lang = document.getElementById('langSelect').value;
+            
+            if (query.length > 0) {
+                // Алдымен әріптерден іздеу
+                const matchedLetter = alphabets[lang].find(l => l.toLowerCase() === query);
+                if (matchedLetter) {
+                    openCategory('cat1');
+                    selectLetter(matchedLetter);
+                    return;
+                }
+
+                // Екінші кезекте барлық басқа бөлімдердегі сөздерден іздеу
+                for (const catKey in categoryData) {
+                    const matchedWord = categoryData[catKey][lang].find(item => item.word.toLowerCase().includes(query));
+                    if (matchedWord) {
+                        openCategory(catKey);
+                        // Осы сөзді тізімнен тауып таңдау
+                        const words = categoryData[catKey][lang];
+                        const wordIndex = words.findIndex(w => w.word === matchedWord.word);
+                        if (wordIndex !== -1) {
+                            selectWord(matchedWord, `word-item-${wordIndex}`);
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Қосымша алғаш рет ашылғанда мазмұнды жүктеу
+        updateLanguageAndContent();
+    </script>
+</body>
+</html>
